@@ -361,11 +361,11 @@ std::unique_ptr<Call> PeerConnectionFactory::CreateCall_w(
   call_config.audio_state = media_engine()->voice().GetAudioState();
 
   FieldTrialParameter<DataRate> min_bandwidth("min",
-                                              DataRate::KilobitsPerSec(30));
+                                              DataRate::KilobitsPerSec(50));
   FieldTrialParameter<DataRate> start_bandwidth("start",
-                                                DataRate::KilobitsPerSec(300));
+                                                DataRate::KilobitsPerSec(2500));
   FieldTrialParameter<DataRate> max_bandwidth("max",
-                                              DataRate::KilobitsPerSec(2000));
+                                              DataRate::KilobitsPerSec(8000));
   ParseFieldTrial({&min_bandwidth, &start_bandwidth, &max_bandwidth},
                   env.field_trials().Lookup("WebRTC-PcFactoryDefaultBitrates"));
 
