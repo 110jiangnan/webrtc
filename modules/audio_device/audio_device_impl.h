@@ -43,7 +43,7 @@ class AudioDeviceModuleImpl : public AudioDeviceModuleForTest {
   };
 
   int32_t CheckPlatform();
-  int32_t CreatePlatformSpecificObjects();
+  int32_t CreatePlatformSpecificObjects(bool recordSysAudio = false);
   int32_t AttachAudioBuffer();
 
   AudioDeviceModuleImpl(AudioLayer audio_layer,

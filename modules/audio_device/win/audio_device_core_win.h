@@ -323,6 +323,8 @@ class AudioDeviceWindowsCore : public AudioDeviceGeneric {
   AudioDeviceModule::WindowsDeviceType _outputDevice;
   uint16_t _inputDeviceIndex;
   uint16_t _outputDeviceIndex;
+
+  bool _recordSystemAudio = false;
 };
 
 #endif  // #if (_MSC_VER >= 1400)

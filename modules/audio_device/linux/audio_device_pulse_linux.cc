@@ -32,7 +32,7 @@ WebRTCPulseSymbolTable* GetPulseSymbolTable() {
 
 namespace webrtc {
 
-AudioDeviceLinuxPulse::AudioDeviceLinuxPulse()
+AudioDeviceLinuxPulse::AudioDeviceLinuxPulse(bool recordSysAudio = false)
     : _ptrAudioBuffer(NULL),
       _inputDeviceIndex(0),
       _outputDeviceIndex(0),
@@ -78,6 +78,7 @@ AudioDeviceLinuxPulse::AudioDeviceLinuxPulse()
       _recStream(NULL),
       _playStream(NULL),
       _recStreamFlags(0),
+      _recordSysAudio(recordSysAudio),
       _playStreamFlags(0) {
   RTC_DLOG(LS_INFO) << __FUNCTION__ << " created";
 
@@ -1363,26 +1364,35 @@ void AudioDeviceLinuxPulse::PaSourceInfoCallbackHandler(const pa_source_info* i,
     return;
   }
 
-  // We don't want to list output devices
-  if (i->monitor_of_sink == PA_INVALID_INDEX) {
-    if (_numRecDevices == _deviceIndex) {
-      // Convert the device index to the one of the source
-      _paDeviceIndex = i->index;
-
-      if (_recDeviceName) {
-        // copy the source name
-        strncpy(_recDeviceName, i->name, kAdmMaxDeviceNameSize);
-        _recDeviceName[kAdmMaxDeviceNameSize - 1] = '\0';
-      }
-      if (_recDisplayDeviceName) {
-        // Copy the source display name
-        strncpy(_recDisplayDeviceName, i->description, kAdmMaxDeviceNameSize);
-        _recDisplayDeviceName[kAdmMaxDeviceNameSize - 1] = '\0';
-      }
-    }
-
-    _numRecDevices++;
+  // Filter devices based on _recordSysAudio setting
+  bool isMonitor = (i->monitor_of_sink != PA_INVALID_INDEX);
+  if ((_recordSysAudio && !isMonitor) || (!_recordSysAudio && isMonitor)) {
+    // Skip devices that don't match the current mode
+    return;
   }
+
+  if (_numRecDevices == _deviceIndex) {
+    // Convert the device index to the one of the source
+    _paDeviceIndex = i->index;
+
+    if (_recDeviceName) {
+      // copy the source name
+      strncpy(_recDeviceName, i->name, kAdmMaxDeviceNameSize);
+      _recDeviceName[kAdmMaxDeviceNameSize - 1] = '\0';
+    }
+    if (_recDisplayDeviceName) {
+      // Copy the source display name
+      if (isMonitor) {
+        // Add (Monitor) suffix to monitor devices
+        snprintf(_recDisplayDeviceName, kAdmMaxDeviceNameSize, "%s (Monitor)", i->description);
+      } else {
+        strncpy(_recDisplayDeviceName, i->description, kAdmMaxDeviceNameSize);
+      }
+      _recDisplayDeviceName[kAdmMaxDeviceNameSize - 1] = '\0';
+    }
+  }
+
+  _numRecDevices++;
 }
 
 void AudioDeviceLinuxPulse::PaServerInfoCallbackHandler(

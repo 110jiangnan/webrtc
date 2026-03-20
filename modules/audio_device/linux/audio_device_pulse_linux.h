@@ -107,7 +107,7 @@ namespace webrtc {
 
 class AudioDeviceLinuxPulse : public AudioDeviceGeneric {
  public:
-  AudioDeviceLinuxPulse();
+  AudioDeviceLinuxPulse(bool recordSysAudio = false);
   virtual ~AudioDeviceLinuxPulse();
 
   // Retrieve the currently utilized audio layer
@@ -342,6 +342,8 @@ class AudioDeviceLinuxPulse : public AudioDeviceGeneric {
 #if defined(WEBRTC_USE_X11)
   Display* _XDisplay;
 #endif
+
+  bool recordSysAudio = false;
 };
 
 }  // namespace webrtc

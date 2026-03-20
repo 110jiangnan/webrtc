@@ -346,7 +346,7 @@ bool AudioDeviceWindowsCore::CoreAudioIsSupported() {
 //  AudioDeviceWindowsCore() - ctor
 // ----------------------------------------------------------------------------
 
-AudioDeviceWindowsCore::AudioDeviceWindowsCore()
+AudioDeviceWindowsCore::AudioDeviceWindowsCore(bool recordSysAudio = false)
     : _avrtLibrary(nullptr),
       _winSupportAvrt(false),
       _comInit(ScopedCOMInitializer::kMTA),
@@ -397,6 +397,7 @@ AudioDeviceWindowsCore::AudioDeviceWindowsCore()
       _inputDevice(AudioDeviceModule::kDefaultCommunicationDevice),
       _outputDevice(AudioDeviceModule::kDefaultCommunicationDevice),
       _inputDeviceIndex(0),
+      _recordSystemAudio(recordSysAudio),
       _outputDeviceIndex(0) {
   RTC_DLOG(LS_INFO) << __FUNCTION__ << " created";
   RTC_DCHECK(_comInit.Succeeded());
@@ -754,14 +755,14 @@ int32_t AudioDeviceWindowsCore::InitMicrophoneLocked() {
   SAFE_RELEASE(_ptrDeviceIn);
   if (_usingInputDeviceIndex) {
     // Refresh the selected capture endpoint device using current index
-    ret = _GetListDevice(eCapture, _inputDeviceIndex, &_ptrDeviceIn);
+    ret = _GetListDevice(_recordSystemAudio ? eRender : eCapture, _inputDeviceIndex, &_ptrDeviceIn);
   } else {
     ERole role;
     (_inputDevice == AudioDeviceModule::kDefaultDevice)
         ? role = eConsole
         : role = eCommunications;
     // Refresh the selected capture endpoint device using role
-    ret = _GetDefaultDevice(eCapture, role, &_ptrDeviceIn);
+    ret = _GetDefaultDevice(_recordSystemAudio ? eRender : eCapture, role, &_ptrDeviceIn);
   }
 
   if (ret != 0 || (_ptrDeviceIn == NULL)) {
@@ -1613,10 +1614,10 @@ int32_t AudioDeviceWindowsCore::RecordingDeviceName(
 
   // Get the endpoint device's friendly-name
   if (defaultCommunicationDevice) {
-    ret = _GetDefaultDeviceName(eCapture, eCommunications, szDeviceName,
+    ret = _GetDefaultDeviceName(_recordSystemAudio ? eRender : eCapture, _recordSystemAudio ? eConsole : eCommunications, szDeviceName,
                                 bufferLen);
   } else {
-    ret = _GetListDeviceName(eCapture, index, szDeviceName, bufferLen);
+    ret = _GetListDeviceName(_recordSystemAudio ? eRender : eCapture, index, szDeviceName, bufferLen);
   }
 
   if (ret == 0) {
@@ -1633,9 +1634,9 @@ int32_t AudioDeviceWindowsCore::RecordingDeviceName(
   // endpoint devices)
   if (defaultCommunicationDevice) {
     ret =
-        _GetDefaultDeviceID(eCapture, eCommunications, szDeviceName, bufferLen);
+        _GetDefaultDeviceID(_recordSystemAudio ? eRender : eCapture, _recordSystemAudio ? eConsole : eCommunications, szDeviceName, bufferLen);
   } else {
-    ret = _GetListDeviceID(eCapture, index, szDeviceName, bufferLen);
+    ret = _GetListDeviceID(_recordSystemAudio ? eRender : eCapture, index, szDeviceName, bufferLen);
   }
 
   if (guid != NULL && ret == 0) {
@@ -1661,8 +1662,8 @@ int16_t AudioDeviceWindowsCore::RecordingDevices() {
 }
 
 int16_t AudioDeviceWindowsCore::RecordingDevicesLocked() {
-  if (_RefreshDeviceList(eCapture) != -1) {
-    return (_DeviceListCount(eCapture));
+  if (_RefreshDeviceList(_recordSystemAudio ? eRender : eCapture) != -1) {
+    return (_DeviceListCount(_recordSystemAudio ? eRender : eCapture));
   }
 
   return -1;
@@ -1691,11 +1692,12 @@ int32_t AudioDeviceWindowsCore::SetRecordingDevice(uint16_t index) {
 
   HRESULT hr(S_OK);
 
-  RTC_DCHECK(_ptrCaptureCollection);
+  IMMDeviceCollection* deviceCollection = _recordSystemAudio ? _ptrRenderCollection : _ptrCaptureCollection;
+  RTC_DCHECK(deviceCollection);
 
   // Select an endpoint capture device given the specified index
   SAFE_RELEASE(_ptrDeviceIn);
-  hr = _ptrCaptureCollection->Item(index, &_ptrDeviceIn);
+  hr = deviceCollection->Item(index, &_ptrDeviceIn);
   if (FAILED(hr)) {
     _TraceCOMError(hr);
     SAFE_RELEASE(_ptrDeviceIn);
@@ -1737,7 +1739,7 @@ int32_t AudioDeviceWindowsCore::SetRecordingDevice(
   MutexLock lock(&mutex_);
 
   // Refresh the list of capture endpoint devices
-  _RefreshDeviceList(eCapture);
+  _RefreshDeviceList(_recordSystemAudio ? eRender : eCapture);
 
   HRESULT hr(S_OK);
 
@@ -1745,7 +1747,7 @@ int32_t AudioDeviceWindowsCore::SetRecordingDevice(
 
   //  Select an endpoint capture device given the specified role
   SAFE_RELEASE(_ptrDeviceIn);
-  hr = _ptrEnumerator->GetDefaultAudioEndpoint(eCapture, role, &_ptrDeviceIn);
+  hr = _ptrEnumerator->GetDefaultAudioEndpoint(_recordSystemAudio ? eRender : eCapture, role, &_ptrDeviceIn);
   if (FAILED(hr)) {
     _TraceCOMError(hr);
     SAFE_RELEASE(_ptrDeviceIn);
@@ -2270,7 +2272,7 @@ int32_t AudioDeviceWindowsCore::InitRecording() {
       AUDCLNT_SHAREMODE_SHARED,  // share Audio Engine with other applications
       AUDCLNT_STREAMFLAGS_EVENTCALLBACK |  // processing of the audio buffer by
                                            // the client will be event driven
-          AUDCLNT_STREAMFLAGS_NOPERSIST,   // volume and mute settings for an
+          AUDCLNT_STREAMFLAGS_NOPERSIST | (_recordSystemAudio ? AUDCLNT_STREAMFLAGS_LOOPBACK : 0),   // volume and mute settings for an
                                            // audio session will not persist
                                            // across system restarts
       0,                    // required for event-driven shared mode
@@ -3462,7 +3464,7 @@ int AudioDeviceWindowsCore::SetDMOProperties() {
       role = eConsole;
     }
 
-    if (_GetDefaultDeviceIndex(eCapture, role, &inDevIndex) == -1) {
+    if (_GetDefaultDeviceIndex(_recordSystemAudio ? eRender : eCapture, role, &inDevIndex) == -1) {
       return -1;
     }
   }
@@ -3473,7 +3475,7 @@ int AudioDeviceWindowsCore::SetDMOProperties() {
       role = eConsole;
     }
 
-    if (_GetDefaultDeviceIndex(eRender, role, &outDevIndex) == -1) {
+    if (_GetDefaultDeviceIndex(_recordSystemAudio ? eRender : eCapture, role, &outDevIndex) == -1) {
       return -1;
     }
   }

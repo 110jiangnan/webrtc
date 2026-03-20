@@ -105,6 +105,7 @@ AudioDeviceMac::AudioDeviceMac()
       _outputDeviceID(kAudioObjectUnknown),
       _inputDeviceIsSpecified(false),
       _outputDeviceIsSpecified(false),
+      _recordSystemAudio(false),
       _recChannels(N_REC_CHANNELS),
       _playChannels(N_PLAY_CHANNELS),
       _captureBufData(NULL),
@@ -197,8 +198,7 @@ void AudioDeviceMac::AttachAudioBuffer(AudioDeviceBuffer* audioBuffer) {
   _ptrAudioBuffer->SetPlayoutChannels(N_PLAY_CHANNELS);
 }
 
-int32_t AudioDeviceMac::ActiveAudioLayer(
-    AudioDeviceModule::AudioLayer& audioLayer) const {
+int32_t AudioDeviceMac::ActiveAudioLayer(AudioDeviceModule::AudioLayer& audioLayer) const {
   audioLayer = AudioDeviceModule::kPlatformDefaultAudio;
   return 0;
 }
@@ -883,6 +883,13 @@ int32_t AudioDeviceMac::GetRecordingDevice() const {
     return _inputDeviceIndex;
   }
 
+  return 0;
+}
+
+int32_t AudioDeviceMac::SetRecordSystemAudio(bool enable) {
+  MutexLock lock(&mutex_);
+  _recordSystemAudio = enable;
+  RTC_LOG(LS_INFO) << "SetRecordSystemAudio: " << enable;
   return 0;
 }
 
@@ -1722,7 +1729,12 @@ int32_t AudioDeviceMac::InitDevice(const uint16_t userDeviceIndex,
   AudioObjectPropertySelector defaultDeviceSelector;
   AudioDeviceID deviceIds[MaxNumberDevices];
 
-  if (isInput) {
+  // If recording system audio, use output device for input
+  if (isInput && _recordSystemAudio) {
+    RTC_LOG(LS_INFO) << "Recording system audio (output device as input)";
+    deviceScope = kAudioDevicePropertyScopeOutput;
+    defaultDeviceSelector = kAudioHardwarePropertyDefaultOutputDevice;
+  } else if (isInput) {
     deviceScope = kAudioDevicePropertyScopeInput;
     defaultDeviceSelector = kAudioHardwarePropertyDefaultInputDevice;
   } else {
@@ -1781,7 +1793,9 @@ int32_t AudioDeviceMac::InitDevice(const uint16_t userDeviceIndex,
   WEBRTC_CA_RETURN_ON_ERR(AudioObjectGetPropertyData(deviceId, &propertyAddress,
                                                      0, NULL, &size, devManf));
 
-  if (isInput) {
+  if (isInput && _recordSystemAudio) {
+    RTC_LOG(LS_INFO) << "System audio input device: " << devManf << " " << devName;
+  } else if (isInput) {
     RTC_LOG(LS_INFO) << "Input device: " << devManf << " " << devName;
   } else {
     RTC_LOG(LS_INFO) << "Output device: " << devManf << " " << devName;

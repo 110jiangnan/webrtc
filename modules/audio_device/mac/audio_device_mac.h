@@ -160,6 +160,7 @@ class AudioDeviceMac : public AudioDeviceGeneric {
   }
   virtual int32_t GetPlayoutDevice() const;
   virtual int32_t GetRecordingDevice() const;
+  virtual int32_t SetRecordSystemAudio(bool enable);
 
  private:
   int32_t InitSpeakerLocked() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
@@ -296,6 +297,7 @@ class AudioDeviceMac : public AudioDeviceGeneric {
   AudioDeviceIOProcID _deviceIOProcID;
   bool _inputDeviceIsSpecified;
   bool _outputDeviceIsSpecified;
+  bool _recordSystemAudio;
 
   uint8_t _recChannels;
   uint8_t _playChannels;

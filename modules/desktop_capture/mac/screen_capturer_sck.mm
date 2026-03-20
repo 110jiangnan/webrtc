@@ -522,6 +522,7 @@ void ScreenCapturerSck::OnShareableContentCreated(SCShareableContent* content,
 void ScreenCapturerSck::StartWithFilter(SCContentFilter* __strong filter) {
   lock_.AssertHeld();
   SCStreamConfiguration* config = [[SCStreamConfiguration alloc] init];
+  // config.captureAudio = YES;
   config.pixelFormat = kCVPixelFormatType_32BGRA;
   config.colorSpaceName = kCGColorSpaceSRGB;
   config.showsCursor = capture_options_.prefer_cursor_embedded();
@@ -855,6 +856,14 @@ std::unique_ptr<DesktopCapturer> CreateGenericCapturerSck(
 - (void)stream:(SCStream*)stream
     didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
                    ofType:(SCStreamOutputType)type {
+  // if (type == SCStreamOutputTypeAudio) {
+  //   CMSampleBufferRef audioBuffer = sampleBuffer;
+  //   CMBlockBufferRef blockBuffer = CMSampleBufferGetDataBuffer(audioBuffer);
+  //   size_t totalSize = 0;
+  //   CMBlockBufferGetDataLength(blockBuffer, &totalSize);
+    
+  //   RTC_LOG(LS_INFO) << "🎵 Audio Frame Size: " << totalSize << " bytes";
+  // }
   CVPixelBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
   if (!pixelBuffer) {
     return;

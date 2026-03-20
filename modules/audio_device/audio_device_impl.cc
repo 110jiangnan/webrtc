@@ -65,16 +65,16 @@ namespace webrtc {
 scoped_refptr<AudioDeviceModule> AudioDeviceModule::Create(
     AudioLayer audio_layer,
     TaskQueueFactory* task_queue_factory,
-    bool bypass_voice_processing) {
+    bool bypass_voice_processing, bool recordSysAudio = false) {
   RTC_DLOG(LS_INFO) << __FUNCTION__;
-  return AudioDeviceModule::CreateForTest(audio_layer, task_queue_factory, bypass_voice_processing);
+  return AudioDeviceModule::CreateForTest(audio_layer, task_queue_factory, bypass_voice_processing, recordSysAudio);
 }
 
 // static
 scoped_refptr<AudioDeviceModuleForTest> AudioDeviceModule::CreateForTest(
     AudioLayer audio_layer,
     TaskQueueFactory* task_queue_factory,
-    bool bypass_voice_processing) {
+    bool bypass_voice_processing, bool recordSysAudio = false) {
   RTC_DLOG(LS_INFO) << __FUNCTION__;
 
   // The "AudioDeviceModule::kWindowsCoreAudio2" audio layer has its own
@@ -104,7 +104,7 @@ scoped_refptr<AudioDeviceModuleForTest> AudioDeviceModule::CreateForTest(
   }
 
   // Create the platform-dependent implementation.
-  if (audio_device->CreatePlatformSpecificObjects() == -1) {
+  if (audio_device->CreatePlatformSpecificObjects(recordSysAudio) == -1) {
     return nullptr;
   }
 
@@ -173,7 +173,7 @@ int32_t AudioDeviceModuleImpl::CheckPlatform() {
   return 0;
 }
 
-int32_t AudioDeviceModuleImpl::CreatePlatformSpecificObjects() {
+int32_t AudioDeviceModuleImpl::CreatePlatformSpecificObjects(bool recordSysAudio = false) {
   RTC_LOG(LS_INFO) << __FUNCTION__;
   if (audio_device_ != nullptr) {
     RTC_LOG(LS_INFO) << "Reusing provided audio device";
@@ -202,7 +202,7 @@ int32_t AudioDeviceModuleImpl::CreatePlatformSpecificObjects() {
       (audio_layer == kPlatformDefaultAudio)) {
     RTC_LOG(LS_INFO) << "Attempting to use the Windows Core Audio APIs...";
     if (AudioDeviceWindowsCore::CoreAudioIsSupported()) {
-      audio_device_.reset(new AudioDeviceWindowsCore());
+      audio_device_.reset(new AudioDeviceWindowsCore(recordSysAudio));
       RTC_LOG(LS_INFO) << "Windows Core Audio APIs will be utilized";
     }
   }
@@ -236,7 +236,7 @@ int32_t AudioDeviceModuleImpl::CreatePlatformSpecificObjects() {
   if ((audio_layer == kLinuxPulseAudio) ||
       (audio_layer == kPlatformDefaultAudio)) {
     // Linux PulseAudio implementation is default.
-    audio_device_.reset(new AudioDeviceLinuxPulse());
+    audio_device_.reset(new AudioDeviceLinuxPulse(recordSysAudio));
     RTC_LOG(LS_INFO) << "Linux PulseAudio APIs will be utilized";
   } else if (audio_layer == kLinuxAlsaAudio) {
     audio_device_.reset(new AudioDeviceLinuxALSA());
