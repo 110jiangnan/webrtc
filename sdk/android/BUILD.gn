@@ -740,6 +740,7 @@ if (current_os == "linux" || is_android) {
       "src/jni/pc/add_ice_candidate_observer.h",
       "src/jni/pc/android_network_monitor.h",
       "src/jni/pc/audio_sink.cc",
+      "src/jni/pc/my_audio_source.cc",
       "src/jni/pc/audio_sink.h",
       "src/jni/pc/audio_track.cc",
       "src/jni/pc/call_session_file_rotating_log_sink.cc",
@@ -1226,6 +1227,7 @@ if (current_os == "linux" || is_android) {
       "src/jni/audio_device/audio_common.h",
       "src/jni/audio_device/audio_device_module.cc",
       "src/jni/audio_device/audio_device_module.h",
+      "src/jni/audio_device/java_empty_adm.cc",
     ]
 
     deps = [

@@ -470,6 +470,11 @@ public class PeerConnectionFactory {
     return new AudioSource(nativeCreateAudioSource(nativeFactory, constraints));
   }
 
+  public MyAudioSource createMyAudioSource(MediaConstraints constraints) {
+    checkPeerConnectionFactoryExists();
+    return new MyAudioSource(nativeCreateMyAudioSource(nativeFactory, constraints));
+  }
+
   public AudioTrack createAudioTrack(String id, AudioSource source) {
     checkPeerConnectionFactoryExists();
     return new AudioTrack(nativeCreateAudioTrack(nativeFactory, id, source.getNativeAudioSource()));
@@ -620,6 +625,7 @@ public class PeerConnectionFactory {
   private static native long nativeCreateVideoTrack(
       long factory, String id, long nativeVideoSource);
   private static native long nativeCreateAudioSource(long factory, MediaConstraints constraints);
+  private static native long nativeCreateMyAudioSource(long factory, MediaConstraints constraints);
   private static native long nativeCreateAudioTrack(long factory, String id, long nativeSource);
   private static native boolean nativeStartAecDump(
       long factory, int file_descriptor, int filesize_limit_bytes);

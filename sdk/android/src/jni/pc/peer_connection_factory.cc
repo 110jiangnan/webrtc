@@ -381,6 +381,18 @@ static jlong JNI_PeerConnectionFactory_CreateAudioSource(
   return jlongFromPointer(source.release());
 }
 
+static jlong JNI_PeerConnectionFactory_CreateMyAudioSource(
+    JNIEnv* jni,
+    jlong native_factory,
+    const jni_zero::JavaParamRef<jobject>& j_constraints) {
+  std::unique_ptr<MediaConstraints> constraints =
+      JavaToNativeMediaConstraints(jni, j_constraints);
+  AudioOptions options;
+  CopyConstraintsIntoAudioOptions(constraints.get(), &options);
+  scoped_refptr<AudioSourceInterface> source = MyAudioSource::Create(options);
+  return jlongFromPointer(source.release());
+}
+
 jlong JNI_PeerConnectionFactory_CreateAudioTrack(
     JNIEnv* jni,
     jlong native_factory,
