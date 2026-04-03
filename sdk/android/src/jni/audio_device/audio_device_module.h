@@ -13,7 +13,7 @@
 
 #include <memory>
 #include <optional>
-#include "api/audio/empty_audio_device_module.h"
+#include "api/audio/empty_audio_device.h"
 #include "api/audio/audio_device.h"
 #include "sdk/android/native_api/jni/scoped_java_ref.h"
 
