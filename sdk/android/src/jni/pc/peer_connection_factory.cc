@@ -16,6 +16,7 @@
 #include "absl/memory/memory.h"
 #include "api/audio/audio_device.h"
 #include "api/audio/audio_processing.h"
+#include "api/audio/empty_audio_device.h"
 #include "api/audio/builtin_audio_processing_builder.h"
 #include "api/enable_media.h"
 #include "api/rtc_event_log/rtc_event_log_factory.h"
@@ -389,7 +390,7 @@ static jlong JNI_PeerConnectionFactory_CreateMyAudioSource(
       JavaToNativeMediaConstraints(jni, j_constraints);
   AudioOptions options;
   CopyConstraintsIntoAudioOptions(constraints.get(), &options);
-  scoped_refptr<AudioSourceInterface> source = MyAudioSource::Create(options);
+  scoped_refptr<AudioSourceInterface> source = MyAudioSource::Create(&options);
   return jlongFromPointer(source.release());
 }
 

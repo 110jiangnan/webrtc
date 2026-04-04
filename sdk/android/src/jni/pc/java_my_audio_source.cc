@@ -13,26 +13,27 @@
 #include "api/audio/empty_audio_device.h"
 #include "sdk/android/src/jni/jni_helpers.h"
 #include "third_party/jni_zero/jni_zero.h"
+#include "sdk/android/generated_peerconnection_jni/JavaMyAudioSource_jni.h"
 
 namespace webrtc {
 namespace jni {
 
-JNI_MyAudioSource_OnData(JNIEnv* env,
-                                           jlong native_my_audio_source,
-                                           jbyteArray j_audio_data,
+static void JNI_JavaMyAudioSource_SendData(JNIEnv* env,
+                                           jlong source,
+                                           const jni_zero::JavaParamRef<jbyteArray>& audio_data,
                                            jint bits_per_sample,
                                            jint sample_rate,
                                            jint number_of_channels,
                                            jint number_of_frames) {
   // Get the MyAudioSource instance
-  MyAudioSource* my_audio_source = reinterpret_cast<MyAudioSource*>(native_my_audio_source);
+  MyAudioSource* my_audio_source = reinterpret_cast<MyAudioSource*>(source);
   
   if (my_audio_source == nullptr) {
     return;
   }
   
   // Convert Java byte array to C++ pointer
-  jbyte* audio_data_ptr = env->GetByteArrayElements(j_audio_data, nullptr);
+  jbyte* audio_data_ptr = env->GetByteArrayElements(audio_data, nullptr);
   if (audio_data_ptr == nullptr) {
     return;
   }
@@ -46,7 +47,7 @@ JNI_MyAudioSource_OnData(JNIEnv* env,
       static_cast<size_t>(number_of_frames));
   
   // Release the byte array elements
-  env->ReleaseByteArrayElements(j_audio_data, audio_data_ptr, JNI_ABORT);
+  env->ReleaseByteArrayElements(audio_data, audio_data_ptr, JNI_ABORT);
 }
 
 }  // namespace jni

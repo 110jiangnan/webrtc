@@ -31,7 +31,9 @@ public class JavaEmptyAdm implements AudioDeviceModule {
   private final Object nativeLock = new Object();
   private long nativeAudioDeviceModule;
 
-  private JavaAudioDeviceModule(Context context) {
+  public Context context;
+
+  public JavaEmptyAdm(Context context) {
     this.context = context;
   }
 

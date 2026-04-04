@@ -21,6 +21,7 @@ import org.webrtc.RtpCapabilities;
 import org.webrtc.audio.AudioDeviceModule;
 import org.webrtc.audio.JavaAudioDeviceModule;
 import org.webrtc.RtpCapabilities;
+import org.webrtc.audio.JavaMyAudioSource;
 
 /**
  * Java wrapper for a C++ PeerConnectionFactoryInterface.  Main entry point to
@@ -470,9 +471,9 @@ public class PeerConnectionFactory {
     return new AudioSource(nativeCreateAudioSource(nativeFactory, constraints));
   }
 
-  public MyAudioSource createMyAudioSource(MediaConstraints constraints) {
+  public JavaMyAudioSource createMyAudioSource(MediaConstraints constraints) {
     checkPeerConnectionFactoryExists();
-    return new MyAudioSource(nativeCreateMyAudioSource(nativeFactory, constraints));
+    return new JavaMyAudioSource(nativeCreateMyAudioSource(nativeFactory, constraints));
   }
 
   public AudioTrack createAudioTrack(String id, AudioSource source) {
