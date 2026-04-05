@@ -20,7 +20,7 @@ public class AudioSource extends MediaSource {
   }
 
   /** Returns a pointer to webrtc::AudioSourceInterface. */
-  long getNativeAudioSource() {
+  public long getNativeAudioSource() {
     return getNativeMediaSource();
   }
 }
