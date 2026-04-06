@@ -10,6 +10,7 @@
 
 #import "RTCAudioSource+Private.h"
 
+#include "api/audio/empty_audio_device.h"
 #include "rtc_base/checks.h"
 
 @implementation RTC_OBJC_TYPE (RTCAudioSource) {
@@ -56,10 +57,9 @@
   _nativeAudioSource->SetVolume(volume);
 }
 
--(void) onAudioData:(NSData *)audioData (int):bits_per_sample (int):sample_rate (int):number_of_channels (int):number_of_frames {
+-(void)onAudioData:(NSData *)audioData bitsPerSample:(int)bits_per_sample sampleRate:(int)sample_rate numberOfChannels:(int)number_of_channels numberOfFrames:(int)number_of_frames {
   if (self.isCustomSource) {
-    // 或者 static_cast<MyAudioSource*>
-    MyAudioSource *myAudioSource = (MyAudioSource *)self.nativeAudioSource;
+    webrtc::MyAudioSource *myAudioSource = static_cast<webrtc::MyAudioSource *>(self.nativeAudioSource.get());
     myAudioSource->OnData(audioData.bytes, bits_per_sample, sample_rate, number_of_channels, number_of_frames);
   }
 }

@@ -12,7 +12,6 @@
 
 #import "RTCMediaSource.h"
 #import "sdk/objc/base/RTCMacros.h"
-#include "api/audio/empty_audio_device.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -29,7 +28,7 @@ RTC_OBJC_EXPORT
 @property(nonatomic, assign) double volume;
 @property(nonatomic, assign) bool isCustomSource;
 
--(void) onAudioData:(NSData *)audioData (int):bits_per_sample (int):sample_rate (int):number_of_channels (int):number_of_frames;
+-(void)onAudioData:(NSData *)audioData bitsPerSample:(int)bits_per_sample sampleRate:(int)sample_rate numberOfChannels:(int)number_of_channels numberOfFrames:(int)number_of_frames;
 
 @end
 

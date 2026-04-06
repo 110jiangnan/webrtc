@@ -38,6 +38,7 @@
 #include "system_wrappers/include/field_trial.h"
 
 #include "api/audio/builtin_audio_processing_builder.h"
+#include "api/audio/empty_audio_device.h"
 #include "api/environment/environment_factory.h"
 #include "api/audio_codecs/builtin_audio_decoder_factory.h"
 #include "api/audio_codecs/builtin_audio_encoder_factory.h"
@@ -168,13 +169,13 @@
     if (!_workerThread) {
       _workerThread = std::shared_ptr<webrtc::Thread>(webrtc::Thread::Create().release());
       _workerThread->SetName("worker_thread", _workerThread.get());
-      result = _workerThread->Start();
+      BOOL result = _workerThread->Start();
       RTC_DCHECK(result) << "Failed to start worker thread.";
     }
     if (!_signalingThread) {
       _signalingThread = std::shared_ptr<webrtc::Thread>(webrtc::Thread::Create().release());
       _signalingThread->SetName("signaling_thread", _signalingThread.get());
-      result = _signalingThread->Start();
+      BOOL result = _signalingThread->Start();
       RTC_DCHECK(result) << "Failed to start signaling thread.";
     }
     // Set fields that are relevant both to 'no media' and 'with media'
@@ -251,15 +252,16 @@
 #endif
 }
 
--(RTCPeerConnectionFactory*) copySharedField() {
-  RTCPeerConnectionFactory* newFactory = [[RTCPeerConnectionFactory alloc]];
+- (RTCPeerConnectionFactory*)copySharedField {
+  RTCPeerConnectionFactory* newFactory = [RTCPeerConnectionFactory alloc];
   newFactory->_networkThread = _networkThread;
   newFactory->_workerThread = _workerThread;
   newFactory->_signalingThread = _signalingThread;
   return newFactory;
 }
--(void) setEmptyAdm() {
-  _nativeAudioDeviceModule = make_ref_counted<EmptyAudioDeviceModule>();
+
+- (void)setEmptyAdm {
+  _nativeAudioDeviceModule = rtc::make_ref_counted<webrtc::EmptyAudioDeviceModule>();
 }
 
 - (instancetype)initNative {
@@ -275,14 +277,14 @@
     if (!_workerThread) {
       _workerThread = std::shared_ptr<webrtc::Thread>(webrtc::Thread::Create().release());
       _workerThread->SetName("worker_thread", _workerThread.get());
-      result = _workerThread->Start();
+      BOOL result = _workerThread->Start();
       RTC_DCHECK(result) << "Failed to start worker thread.";
     }
 
     if (!_signalingThread) {
       _signalingThread = std::shared_ptr<webrtc::Thread>(webrtc::Thread::Create().release());
       _signalingThread->SetName("signaling_thread", _signalingThread.get());
-      result = _signalingThread->Start();
+      BOOL result = _signalingThread->Start();
       RTC_DCHECK(result) << "Failed to start signaling thread.";
     }
   }
@@ -388,15 +390,20 @@
 }
 
 - (RTC_OBJC_TYPE(RTCAudioSource) *)audioSourceWithConstraints:
-    (nullable RTC_OBJC_TYPE(RTCMediaConstraints) *)constraints (bool):customSource {
+    (nullable RTC_OBJC_TYPE(RTCMediaConstraints) *)constraints {
+  return [self audioSourceWithConstraints:constraints customSource:false];
+}
+
+- (RTC_OBJC_TYPE(RTCAudioSource) *)audioSourceWithConstraints:
+    (nullable RTC_OBJC_TYPE(RTCMediaConstraints) *)constraints customSource:(bool)customSource {
   std::unique_ptr<webrtc::MediaConstraints> nativeConstraints;
   if (constraints) {
     nativeConstraints = constraints.nativeConstraints;
   }
   webrtc::AudioOptions options;
   CopyConstraintsIntoAudioOptions(nativeConstraints.get(), &options);
-  if (customSource) {
-    scoped_refptr<AudioSourceInterface> source = MyAudioSource::Create(&options);
+  if (customSource) { 
+    webrtc::scoped_refptr<webrtc::AudioSourceInterface> source = webrtc::MyAudioSource::Create(&options);
     RTC_OBJC_TYPE(RTCAudioSource) *audioSource = [[RTC_OBJC_TYPE(RTCAudioSource) alloc] initWithFactory:self nativeAudioSource:source];
     audioSource.isCustomSource = true;
     return audioSource;
