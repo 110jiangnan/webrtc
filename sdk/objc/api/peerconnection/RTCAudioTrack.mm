@@ -28,6 +28,7 @@
 }
 
 @synthesize source = _source;
+@synthesize tab = _tab;
 
 - (instancetype)initWithFactory:
                     (RTC_OBJC_TYPE(RTCPeerConnectionFactory) *)factory

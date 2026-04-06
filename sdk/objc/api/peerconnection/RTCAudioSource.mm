@@ -16,6 +16,7 @@
 }
 
 @synthesize volume = _volume;
+@synthesize isCustomSource = _isCustomSource;
 @synthesize nativeAudioSource = _nativeAudioSource;
 
 - (instancetype)
@@ -53,6 +54,14 @@
 - (void)setVolume:(double)volume {
   _volume = volume;
   _nativeAudioSource->SetVolume(volume);
+}
+
+-(void) onAudioData:(NSData *)audioData (int):bits_per_sample (int):sample_rate (int):number_of_channels (int):number_of_frames {
+  if (self.isCustomSource) {
+    // 或者 static_cast<MyAudioSource*>
+    MyAudioSource *myAudioSource = (MyAudioSource *)self.nativeAudioSource;
+    myAudioSource->OnData(audioData.bytes, bits_per_sample, sample_rate, number_of_channels, number_of_frames);
+  }
 }
 
 @end
