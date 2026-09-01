@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include "api/audio/empty_audio_device_module.h"
+#include "api/audio/empty_audio_device.h"
 #include "api/audio/audio_device.h"
 #include "api/audio/audio_device_defines.h"
 #include "api/environment/environment.h"
