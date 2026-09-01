@@ -385,9 +385,9 @@ std::unique_ptr<Call> PeerConnectionFactory::CreateCall_w(
   FieldTrialParameter<DataRate> min_bandwidth("min",
                                               DataRate::KilobitsPerSec(50));
   FieldTrialParameter<DataRate> start_bandwidth("start",
-                                                DataRate::KilobitsPerSec(2500));
+                                                DataRate::KilobitsPerSec(4000));
   FieldTrialParameter<DataRate> max_bandwidth("max",
-                                              DataRate::KilobitsPerSec(8000));
+                                              DataRate::KilobitsPerSec(20000));
   ParseFieldTrial({&min_bandwidth, &start_bandwidth, &max_bandwidth},
                   env.field_trials().Lookup("WebRTC-PcFactoryDefaultBitrates"));
 

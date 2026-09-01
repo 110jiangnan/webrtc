@@ -695,5 +695,11 @@ scoped_refptr<AudioDeviceModule> CreateAudioDeviceModuleFromInputAndOutput(
       playout_delay_ms, std::move(audio_input), std::move(audio_output));
 }
 
+scoped_refptr<AudioDeviceModule> CreateEmptyAdm() {
+  RTC_DLOG(LS_INFO) << __FUNCTION__;
+  return make_ref_counted<EmptyAudioDeviceModule>();
+}
+
+
 }  // namespace jni
 }  // namespace webrtc

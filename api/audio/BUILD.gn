@@ -13,6 +13,8 @@ rtc_source_set("audio_device") {
   sources = [
     "audio_device.h",
     "audio_device_defines.h",
+    "empty_audio_device.h",
+    "empty_audio_device.cc",
   ]
   deps = [
     "..:ref_count",

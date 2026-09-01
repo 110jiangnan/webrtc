@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-
+#include "api/audio/empty_audio_device_module.h"
 #include "api/audio/audio_device.h"
 #include "api/audio/audio_device_defines.h"
 #include "api/environment/environment.h"
@@ -137,6 +137,8 @@ scoped_refptr<AudioDeviceModule> CreateAudioDeviceModuleFromInputAndOutput(
     uint16_t playout_delay_ms,
     std::unique_ptr<AudioInput> audio_input,
     std::unique_ptr<AudioOutput> audio_output);
+
+scoped_refptr<AudioDeviceModule> CreateEmptyAdm();
 
 }  // namespace jni
 
