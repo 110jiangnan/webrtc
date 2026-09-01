@@ -9,7 +9,7 @@
  */
 
 #import <Foundation/Foundation.h>
-
+#include "api/audio/empty_audio_device.h"
 #import "RTCMacros.h"
 #import "RTCAudioDeviceModule.h"
 #import "RTCAudioProcessingState.h"
@@ -79,6 +79,9 @@ RTC_OBJC_EXPORT
  *  factory-scoped processing state. */
 @property(nonatomic, readonly) RTC_OBJC_TYPE(RTCAudioProcessingState) *audioProcessingState;
 
+- (RTCPeerConnectionFactory*) copySharedField;
+
+- (void) setEmptyAdm;
 /**
  * Valid kind values are kRTCMediaStreamTrackKindAudio and
  * kRTCMediaStreamTrackKindVideo.
@@ -93,7 +96,7 @@ RTC_OBJC_EXPORT
 
 /** Initialize an RTCAudioSource with constraints. */
 - (RTC_OBJC_TYPE(RTCAudioSource) *)audioSourceWithConstraints:
-    (nullable RTC_OBJC_TYPE(RTCMediaConstraints) *)constraints;
+    (nullable RTC_OBJC_TYPE(RTCMediaConstraints) *)constraints (bool):customSource = false;
 
 /** Initialize an RTCAudioTrack with an id. Convenience ctor to use an audio source
  * with no constraints.

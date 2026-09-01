@@ -150,6 +150,71 @@ static webrtc::Environment CreateDefaultEnvironment() {
   }
   return [self initWithMediaAndDependencies:dependencies];
 #endif
+  if (dependencies.event_log_factory == nullptr) {
+    dependencies.event_log_factory =
+        std::make_unique<webrtc::RtcEventLogFactory>();
+
+  }
+  webrtc::EnableMedia(dependencies);
+  return [self initWithNativeDependencies:std::move(dependencies)];
+}
+
+- (instancetype)initWithNativeDependencies:
+    (webrtc::PeerConnectionFactoryDependencies)dependencies {
+  self = [super init];
+  if (self) {
+    if (!_networkThread) {
+      _networkThread = std::shared_ptr<webrtc::Thread>(webrtc::Thread::CreateWithSocketServer().release());
+      _networkThread->SetName("network_thread", _networkThread.get());
+      BOOL result = _networkThread->Start();
+      RTC_DCHECK(result) << "Failed to start network thread.";
+    }
+    if (!_workerThread) {
+      _workerThread = std::shared_ptr<webrtc::Thread>(webrtc::Thread::Create().release());
+      _workerThread->SetName("worker_thread", _workerThread.get());
+      result = _workerThread->Start();
+      RTC_DCHECK(result) << "Failed to start worker thread.";
+    }
+    if (!_signalingThread) {
+      _signalingThread = std::shared_ptr<webrtc::Thread>(webrtc::Thread::Create().release());
+      _signalingThread->SetName("signaling_thread", _signalingThread.get());
+      result = _signalingThread->Start();
+      RTC_DCHECK(result) << "Failed to start signaling thread.";
+    }
+    // Set fields that are relevant both to 'no media' and 'with media'
+    // scenarios.
+
+    dependencies.network_thread = _networkThread.get();
+    dependencies.worker_thread = _workerThread.get();
+    dependencies.signaling_thread = _signalingThread.get();
+    if (dependencies.trials == nullptr) {
+      dependencies.trials = std::make_unique<webrtc::FieldTrialBasedConfig>();
+    }
+    if (dependencies.network_monitor_factory == nullptr &&
+        dependencies.trials->IsEnabled("WebRTC-Network-UseNWPathMonitor")) {
+      dependencies.network_monitor_factory =
+          webrtc::CreateNetworkMonitorFactory();
+    }
+
+    _nativeFactory =
+        webrtc::CreateModularPeerConnectionFactory(std::move(dependencies));
+    NSAssert(_nativeFactory, @"Failed to initialize PeerConnectionFactory!");
+  }
+  return self;
+}
+
+- (RTC_OBJC_TYPE(RTCRtpCapabilities) *)rtpSenderCapabilitiesFor:(RTC_OBJC_TYPE(RTCRtpMediaType))mediaType {
+
+  webrtc::RtpCapabilities capabilities = _nativeFactory->GetRtpSenderCapabilities([RTC_OBJC_TYPE(RTCRtpReceiver) nativeMediaTypeForMediaType: mediaType]);
+
+  return [[RTC_OBJC_TYPE(RTCRtpCapabilities) alloc] initWithNativeRtpCapabilities:capabilities];
+}
+
+- (RTC_OBJC_TYPE(RTCRtpCapabilities) *)rtpReceiverCapabilitiesFor:(RTC_OBJC_TYPE(RTCRtpMediaType))mediaType {
+
+  webrtc::RtpCapabilities capabilities = _nativeFactory->GetRtpReceiverCapabilities([RTC_OBJC_TYPE(RTCRtpReceiver) nativeMediaTypeForMediaType: mediaType]);
+
+  return [[RTC_OBJC_TYPE(RTCRtpCapabilities) alloc] initWithNativeRtpCapabilities:capabilities];
 }
 
 - (instancetype)
@@ -320,23 +385,41 @@ static webrtc::Environment CreateDefaultEnvironment() {
   return [self initWithNativeDependencies:dependencies];
 }
 
+-(RTCPeerConnectionFactory*) copySharedField() {
+  RTCPeerConnectionFactory* newFactory = [[RTCPeerConnectionFactory alloc]];
+  newFactory->_networkThread = _networkThread;
+  newFactory->_workerThread = _workerThread;
+  newFactory->_signalingThread = _signalingThread;
+  return newFactory;
+}
+
+-(void) setEmptyAdm() {
+  _nativeAudioDeviceModule = make_ref_counted<EmptyAudioDeviceModule>();
+}
+
 - (instancetype)initNative {
   self = [super init];
   if (self) {
-    _networkThread = webrtc::Thread::CreateWithSocketServer();
-    _networkThread->SetName("network_thread", _networkThread.get());
-    BOOL result = _networkThread->Start();
-    RTC_DCHECK(result) << "Failed to start network thread.";
+    if (!_networkThread) {
+      _networkThread = std::shared_ptr<webrtc::Thread>(webrtc::Thread::CreateWithSocketServer().release());
+      _networkThread->SetName("network_thread", _networkThread.get());
+      BOOL result = _networkThread->Start();
+      RTC_DCHECK(result) << "Failed to start network thread.";
+    }
 
-    _workerThread = webrtc::Thread::Create();
-    _workerThread->SetName("worker_thread", _workerThread.get());
-    result = _workerThread->Start();
-    RTC_DCHECK(result) << "Failed to start worker thread.";
+    if (!_workerThread) {
+      _workerThread = std::shared_ptr<webrtc::Thread>(webrtc::Thread::Create().release());
+      _workerThread->SetName("worker_thread", _workerThread.get());
+      result = _workerThread->Start();
+      RTC_DCHECK(result) << "Failed to start worker thread.";
+    }
 
-    _signalingThread = webrtc::Thread::Create();
-    _signalingThread->SetName("signaling_thread", _signalingThread.get());
-    result = _signalingThread->Start();
-    RTC_DCHECK(result) << "Failed to start signaling thread.";
+    if (!_signalingThread) {
+      _signalingThread = std::shared_ptr<webrtc::Thread>(webrtc::Thread::Create().release());
+      _signalingThread->SetName("signaling_thread", _signalingThread.get());
+      result = _signalingThread->Start();
+      RTC_DCHECK(result) << "Failed to start signaling thread.";
+    }
   }
   return self;
 }
@@ -367,20 +450,22 @@ static webrtc::Environment CreateDefaultEnvironment() {
     dependencies.signaling_thread = _signalingThread.get();
     dependencies.network_monitor_factory = webrtc::CreateNetworkMonitorFactory();
 
-    if (audioDeviceModule != nullptr) {
-      _nativeAudioDeviceModule = audioDeviceModule;
-    } else if (audioDeviceModuleType == RTC_OBJC_TYPE(RTCAudioDeviceModuleTypeAudioEngine)) {
-      _nativeAudioDeviceModule = _workerThread->BlockingCall([&bypassVoiceProcessing, &dependencies]() {
-        return webrtc::make_ref_counted<webrtc::AudioEngineDevice>(*dependencies.env, bypassVoiceProcessing == YES);
-      });
-    } else {
-      _nativeAudioDeviceModule =
-          _workerThread->BlockingCall([&bypassVoiceProcessing, &dependencies]() {
-            return webrtc::CreateAudioDeviceModule(
+    if (_nativeAudioDeviceModule == nullptr) {
+      if (audioDeviceModule != nullptr) {
+        _nativeAudioDeviceModule = audioDeviceModule;
+      } else if (audioDeviceModuleType == RTC_OBJC_TYPE(RTCAudioDeviceModuleTypeAudioEngine)) {
+        _nativeAudioDeviceModule = _workerThread->BlockingCall([&bypassVoiceProcessing, &dependencies]() {
+          return webrtc::make_ref_counted<webrtc::AudioEngineDevice>(*dependencies.env, bypassVoiceProcessing == YES);
+        });
+      } else {
+        _nativeAudioDeviceModule =
+            _workerThread->BlockingCall([&bypassVoiceProcessing, &dependencies]() {
+              return webrtc::CreateAudioDeviceModule(
                 *dependencies.env,
                 webrtc::AudioDeviceModule::AudioLayer::kPlatformDefaultAudio,
                 bypassVoiceProcessing == YES);
-          });
+            });
+      }
     }
 
     _audioDeviceModule =
@@ -429,14 +514,19 @@ static webrtc::Environment CreateDefaultEnvironment() {
 }
 
 - (RTC_OBJC_TYPE(RTCAudioSource) *)audioSourceWithConstraints:
-    (nullable RTC_OBJC_TYPE(RTCMediaConstraints) *)constraints {
+    (nullable RTC_OBJC_TYPE(RTCMediaConstraints) *)constraints (bool):customSource {
   std::unique_ptr<webrtc::MediaConstraints> nativeConstraints;
   if (constraints) {
     nativeConstraints = constraints.nativeConstraints;
   }
   webrtc::AudioOptions options;
   CopyConstraintsIntoAudioOptions(nativeConstraints.get(), &options);
-
+  if (customSource) {
+    scoped_refptr<AudioSourceInterface> source = MyAudioSource::Create(&options);
+    RTC_OBJC_TYPE(RTCAudioSource) *audioSource = [[RTC_OBJC_TYPE(RTCAudioSource) alloc] initWithFactory:self nativeAudioSource:source];
+    audioSource.isCustomSource = true;
+    return audioSource;
+  }
   webrtc::scoped_refptr<webrtc::AudioSourceInterface> source =
       _nativeFactory->CreateAudioSource(options);
   return [[RTC_OBJC_TYPE(RTCAudioSource) alloc] initWithFactory:self nativeAudioSource:source];

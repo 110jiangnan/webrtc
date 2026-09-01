@@ -118,6 +118,8 @@ RTC_OBJC_EXPORT
 /** The audio source for this audio track. */
 @property(nonatomic, readonly) RTC_OBJC_TYPE(RTCAudioSource) * source;
 
+@property(nonatomic, strong) NSString *tab;
+
 - (void)addRenderer:(id<RTC_OBJC_TYPE(RTCAudioRenderer)>)renderer;
 
 - (void)removeRenderer:(id<RTC_OBJC_TYPE(RTCAudioRenderer)>)renderer;
