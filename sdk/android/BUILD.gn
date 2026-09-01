@@ -294,6 +294,7 @@ if (is_android) {
       "api/org/webrtc/AudioFrameProcessor.java",
       "api/org/webrtc/AudioProcessingFactory.java",
       "api/org/webrtc/AudioSource.java",
+      "api/org/webrtc/audio/JavaMyAudioSource.java",
       "api/org/webrtc/AudioTrack.java",
       "api/org/webrtc/AudioTrackSink.java",
       "api/org/webrtc/CallSessionFileRotatingLogSink.java",
@@ -475,6 +476,7 @@ if (is_android) {
     visibility = [ "*" ]
     sources = [
       "api/org/webrtc/audio/JavaAudioDeviceModule.java",
+      "api/org/webrtc/audio/JavaEmptyAdm.java",
       "src/java/org/webrtc/audio/LowLatencyAudioBufferManager.java",
       "src/java/org/webrtc/audio/VolumeLogger.java",
       "src/java/org/webrtc/audio/WebRtcAudioEffects.java",
@@ -796,7 +798,7 @@ if (current_os == "linux" || is_android) {
       "src/jni/pc/add_ice_candidate_observer.h",
       "src/jni/pc/android_network_monitor.h",
       "src/jni/pc/audio_sink.cc",
-      "src/jni/pc/my_audio_source.cc",
+      "src/jni/pc/java_my_audio_source.cc",
       "src/jni/pc/audio_sink.h",
       "src/jni/pc/audio_track.cc",
       "src/jni/pc/call_session_file_rotating_log_sink.cc",
@@ -1600,6 +1602,7 @@ if (current_os == "linux" || is_android) {
     sources = [
       "api/org/webrtc/AddIceObserver.java",
       "api/org/webrtc/AudioTrack.java",
+      "api/org/webrtc/audio/JavaMyAudioSource.java",
       "api/org/webrtc/AudioTrackSink.java",
       "api/org/webrtc/CallSessionFileRotatingLogSink.java",
       "api/org/webrtc/CandidatePairChangeEvent.java",
@@ -1646,7 +1649,10 @@ if (current_os == "linux" || is_android) {
   }
 
   generate_jni("generated_java_audio_jni") {
-    sources = [ "api/org/webrtc/audio/JavaAudioDeviceModule.java" ]
+    sources = [ 
+      "api/org/webrtc/audio/JavaAudioDeviceModule.java",
+      "api/org/webrtc/audio/JavaEmptyAdm.java",
+    ]
     namespace = "webrtc::jni"
   }
 
